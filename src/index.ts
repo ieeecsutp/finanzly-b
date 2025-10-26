@@ -4,6 +4,7 @@ import { testConnection } from "./lib/prisma";
 import routes from "./routes/routes";
 import authController from "./auth/auth.controller";
 import { errorHandler } from "./utils/error-handler";
+import cookieParser from 'cookie-parser';
 
 if (process.env.NODE_ENV !== "production") {
   process.loadEnvFile?.();
@@ -13,6 +14,8 @@ if (process.env.NODE_ENV !== "production") {
 const app = express();
 const PORT = process.env.PORT || 4000; // 👈 backend corre en 4000
 const AUTHOR = process.env.AUTHOR || "Desconocido";
+
+app.use(cookieParser());
 
 // Orígenes permitidos (frontend por defecto en 3000)
 const allowedOrigins =
@@ -30,6 +33,7 @@ app.use(
       }
     },
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
 

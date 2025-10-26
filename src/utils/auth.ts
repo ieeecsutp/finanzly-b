@@ -48,13 +48,23 @@ export function createAccessToken(data : Object, expiresInMinutes = null) {
 }
 
 export const verifyToken = (req: Request, res: Response, next: NextFunction) => {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1]; // "Bearer <token>"
+  let token: string | undefined;
 
+  // 1. Intentar obtener el token del header Authorization
+  const authHeader = req.headers["authorization"];
+  if (authHeader) {
+    token = authHeader.split(" ")[1]; // "Bearer <token>"
+  }
+
+  // 2. Si no está en el header, buscar en cookies
+  if (!token && req.cookies) {
+    token = req.cookies.token; // Nombre de tu cookie
+  }
+
+  // 3. Si no hay token en ningún lugar
   if (!token) {
     throw new UnauthorizedError("Token requerido.");
   }
-  
 
   try {
     const decoded = jwt.verify(token, settings.secret_key);
@@ -69,6 +79,7 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
     throw new UnauthorizedError("Token invalido o expirado.");
   }
 };
+
 
 // Para verificar usuario
 
