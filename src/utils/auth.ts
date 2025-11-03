@@ -1,11 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcrypt";
 import jwt ,{ JwtPayload } from "jsonwebtoken";
+import crypto from "crypto";
 import { BadRequestError, DuplicateResourceError, ResourceNotFoundError, UnauthorizedError } from "../utils/error-types";
 
 const settings = {
-  access_token_expire_minutes: 30,
-  secret_key: "mi_secreto_super_seguro"
+  access_token_expire_minutes: 15,
+  refresh_token_expire_days: 7,
+  secret_key: process.env.JWT_ACCESS_SECRET || "mi_secreto_super_seguro",
+  refresh_secret_key: process.env.JWT_REFRESH_SECRET || "mi_refresh_secreto_super_seguro" 
 };
 
 // --- Extensión de la interfaz Request para TypeScript ---
@@ -45,6 +48,16 @@ export function createAccessToken(data : Object, expiresInMinutes = null) {
     algorithm: "HS256",
     expiresIn: `${expiresIn}m`
   });
+}
+
+export function createRefreshToken(): string {
+  return crypto.randomBytes(64).toString('hex');
+}
+
+export function getRefreshTokenExpiration(): Date {
+  const expirationDate = new Date();
+  expirationDate.setDate(expirationDate.getDate() + settings.refresh_token_expire_days);
+  return expirationDate;
 }
 
 export const verifyToken = (req: Request, res: Response, next: NextFunction) => {
@@ -92,4 +105,12 @@ export const verifyUserMatch = (req: Request, res: Response, next: NextFunction)
   }
 
   next();
+};
+
+export const REFRESH_TOKEN_COOKIE_OPTIONS = {
+  httpOnly: true, // No accesible desde JavaScript
+  secure: process.env.NODE_ENV === 'production', // Solo HTTPS en producción
+  sameSite: 'strict' as const, // Protección CSRF
+  maxAge: settings.refresh_token_expire_days * 24 * 60 * 60 * 1000, // 7 días en ms
+  path: '/api/v1/auth' // Solo se envía a rutas de auth
 };

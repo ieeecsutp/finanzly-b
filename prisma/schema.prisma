@@ -24,6 +24,7 @@ model Usuario {
   fechaCreado DateTime @default(now()) @map("fecha_creado")
 
   registros Registro[]
+  refresh RefreshToken[]
 }
 
 model Categoria {
@@ -46,4 +47,14 @@ model Registro{
 
   usuario Usuario @relation(fields: [idUsuario], references: [idUsuario])
   categoria Categoria @relation(fields: [idCategoria], references: [idCategoria])
+}
+
+model RefreshToken{
+  idRefresh Int @id @default(autoincrement()) @map("id_refresh")
+  idUsuario   Int
+  token       String   @unique
+  fechaExpiracion   DateTime
+  fechaCreacion   DateTime @default(now())
+  Revocado     Boolean  @default(false)
+  usuario Usuario @relation(fields: [idUsuario], references: [idUsuario])
 }
