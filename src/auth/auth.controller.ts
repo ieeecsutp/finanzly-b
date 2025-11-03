@@ -6,7 +6,7 @@ import { authRegisterRq } from "./request/auth-register-rq";
 import { authLoginRq } from "./request/auth-login-rq";
 import { AuthLoginRs } from "./response/auth-login-rs";
 import { UsuarioRs } from "./response/auth-register-rs";
-import { verifyToken } from "../utils/auth";
+import { verifyToken, REFRESH_TOKEN_COOKIE_OPTIONS } from "../utils/auth";
 
 const router = Router();
 const authService = new AuthService();
@@ -38,12 +38,14 @@ router.post("/login",
     async (req: Request, res: Response, next: NextFunction) => {
         try{
             const data = req.body;
-            const newUsuario = await authService.loginAuth(data.correo,data.contraseña);
+            const loginData = await authService.loginAuth(data.correo,data.contraseña);
+
+            res.cookie('refreshToken', loginData.refresh_token, REFRESH_TOKEN_COOKIE_OPTIONS);
 
             const response: ApiResponse<AuthLoginRs> = {
                 status: "success",
                 message: "Usuaio logeado exitosamente",
-                data: newUsuario,
+                data: loginData,
             };
 
             res.status(201).json(response);
@@ -52,6 +54,42 @@ router.post("/login",
         }
     }    
 );
+
+router.post("/refresh",
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            // Obtener refresh token de la cookie
+            const refreshToken = req.cookies?.refreshToken;
+
+            if (!refreshToken) {
+                return res.status(401).json({
+                    status: "error",
+                    message: "Refresh token no proporcionado",
+                });
+            }
+
+            // Renovar tokens
+            const { accessToken, newRefreshToken } = await authService.refreshAccessToken(refreshToken);
+
+            // ✅ Actualizar cookie con nuevo refresh token (token rotation)
+            res.cookie('refreshToken', newRefreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
+
+            const response: ApiResponse<{ access_token: string; token_type: string }> = {
+                status: "success",
+                message: "Token renovado exitosamente",
+                data: {
+                    access_token: accessToken,
+                    token_type: "bearer"
+                },
+            };
+
+            res.status(200).json(response);
+        } catch (error) {
+            next(error);
+        }
+    }
+);
+
 
 router.get("/test",
     verifyToken, 

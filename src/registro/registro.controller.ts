@@ -1,12 +1,13 @@
 import { Request, Response, NextFunction, Router } from "express";
 import { RegistroService } from "./registro.service";
 import { ApiResponse } from "../utils/api-response";
-import { registroCreateRq } from "./request/registro-create-rq";
+import { registroCreateRq, registroUserCreateRq } from "./request/registro-create-rq";
 import { registroUpdateRq } from "./request/registro-update-rq";
 import { validateRequest } from "../utils/validate-request";
 import { RegistroDetailRs } from "./response/registro-detail-rs";
 import { RegistroItemRs } from "./response/registro-item-rs";
 import { verifyToken } from "../utils/auth";
+import { ResourceNotFoundError } from "../utils/error-types";
 
 const router = Router();
 const registroService = new RegistroService();
@@ -68,6 +69,35 @@ router.get("/:id",verifyToken, async (req: Request, res: Response, next: NextFun
         next(error);
     }
 });
+
+// POST /registros/usuario - Crear un nuevo registro
+router.post("/usuario",
+    registroUserCreateRq(),
+    verifyToken,
+    validateRequest("Datos inválidos para crear registro"),
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            if (!req.user || !req.user.id) {
+                throw new ResourceNotFoundError("El usuario especificado no existe.");
+            }
+
+            const data = req.body;
+            data.id_usuario = req.user.id
+
+            const newRegistro = await registroService.createRegistro(data);
+
+            const response: ApiResponse<RegistroDetailRs> = {
+                status: "success",
+                message: "Registro creado exitosamente",
+                data: newRegistro,
+            };
+
+            res.status(201).json(response);
+        } catch (error) {
+            next(error);
+        }
+    }
+);
 
 // GET /registros/usuario/:id - Obtener registros por usuario
 router.get("/usuario/:id",verifyToken, async (req: Request, res: Response, next: NextFunction) => {
