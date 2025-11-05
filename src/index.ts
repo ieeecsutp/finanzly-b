@@ -51,6 +51,10 @@ app.use("/api/v1", routes); // resto de rutas
 // Middleware de errores
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor backend corriendo en http://localhost:${PORT}`);
-});
+if(process.env.NODE_ENV !== 'test'){
+  app.listen(PORT, () => {
+    console.log(`🚀 Servidor backend corriendo en http://localhost:${PORT}`);
+  });
+}
+
+export default app
