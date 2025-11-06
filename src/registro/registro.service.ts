@@ -26,6 +26,31 @@ interface RegistroUpdateInput {
 
 export class RegistroService {
     private registroRepository = new RegistroRepository();
+    
+    /**
+     * Obtener balances agregados para un usuario
+     * - balance_total: ingresos - gastos (todos los registros)
+     * - ingresos_mensuales/gastos_mensuales: para el mes actual
+     */
+    async getBalances(usuarioId: number): Promise<{ balance_total: number; ingresos_mensuales: number; gastos_mensuales: number }> {
+        // calcular totales globales
+        const totalIngresos = await this.registroRepository.sumMontoByUserAndTipo(usuarioId, 'ingreso');
+        const totalGastos = await this.registroRepository.sumMontoByUserAndTipo(usuarioId, 'gasto');
+
+        // calcular rango del mes actual
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+        const ingresosMensuales = await this.registroRepository.sumMontoByUserTipoAndDateRange(usuarioId, 'ingreso', startOfMonth, endOfMonth);
+        const gastosMensuales = await this.registroRepository.sumMontoByUserTipoAndDateRange(usuarioId, 'gasto', startOfMonth, endOfMonth);
+
+        return {
+            balance_total: Number((totalIngresos || 0) - (totalGastos || 0)),
+            ingresos_mensuales: Number(ingresosMensuales || 0),
+            gastos_mensuales: Number(gastosMensuales || 0),
+        };
+    }
 
     async createRegistro(data: RegistroCreateInput): Promise<RegistroDetailRs> {
         // Verificar que el usuario existe
