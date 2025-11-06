@@ -3,6 +3,17 @@ import { PrismaClient, Usuario, RefreshToken, Prisma } from "@prisma/client";
 const prisma = new PrismaClient();
 
 export class AuthRepository {
+    async cleanupExpiredTokens(): Promise<void> {
+        const now = new Date();
+        await prisma.refreshToken.deleteMany({
+            where: {
+                OR: [
+                    { fechaExpiracion: { lt: now } },
+                    { Revocado: true }
+                ]
+            }
+        });
+    }
     async getByEmail(email: string): Promise<Usuario | null> {
         return await prisma.usuario.findUnique({
             where: { correo: email },

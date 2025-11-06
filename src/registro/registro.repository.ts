@@ -106,4 +106,41 @@ export class RegistroRepository {
         });
         return !!categoria;
     }
+
+    // Devuelve la suma total de montos por tipo ('ingreso'|'gasto') para un usuario
+    async sumMontoByUserAndTipo(usuarioId: number, tipo: string): Promise<number> {
+        const result = await prisma.registro.aggregate({
+            where: {
+                idUsuario: usuarioId,
+                tipo: tipo,
+            },
+            _sum: {
+                monto: true,
+            },
+        });
+
+        // Prisma devuelve Decimal o null
+        // @ts-ignore
+        return result._sum?.monto ? Number(result._sum.monto) : 0;
+    }
+
+    // Devuelve la suma de montos por tipo en un rango de fechas (inclusive) para un usuario
+    async sumMontoByUserTipoAndDateRange(usuarioId: number, tipo: string, start: Date, end: Date): Promise<number> {
+        const result = await prisma.registro.aggregate({
+            where: {
+                idUsuario: usuarioId,
+                tipo: tipo,
+                fechaRegistro: {
+                    gte: start,
+                    lte: end,
+                },
+            },
+            _sum: {
+                monto: true,
+            },
+        });
+
+        // @ts-ignore
+        return result._sum?.monto ? Number(result._sum.monto) : 0;
+    }
 }
