@@ -1,7 +1,20 @@
-# Finanzly Backend
+<div align="center">
 
-## 📋 Descripción
-API REST desarrollada con Node.js y Express para gestionar las finanzas personales de los usuarios de Finanzly.
+<strong><h1>
+FINANZLY</h1></strong>
+
+## ![IEEE Comité de Proyectos](https://img.shields.io/badge/IEEE-Comité%20de%20Proyectos-1E90FF?style=for-the-badge&logo=ieee&logoColor=white)
+
+
+
+
+<a id="readme-top"></a>
+
+<br>
+
+  <img width="500px" height="250px" src="assets/Finanzly3.png" alt="Logo" width="800" />
+
+</div>
 
 ## 🛠️ Tecnologías Principales
 - ![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white) - Entorno de ejecución
@@ -102,11 +115,13 @@ npm run test:coverage
 - `PUT /api/registros/:id` - Actualizar registro
 - `DELETE /api/registros/:id` - Eliminar registro
 
-## 📄 Licencia
-Este proyecto está bajo la Licencia MIT.
+## 👥 Equipo B
+[![Diego Huaman](https://img.shields.io/badge/Diego%20Huaman-%2338B2AC?style=for-the-badge&logo=react&logoColor=white)](https://www.linkedin.com/in/diego-huaman1121/)
+[![Ronal Trinidad](https://img.shields.io/badge/Ronal%20Trinidad-%23F59E0B?style=for-the-badge&logo=javascript&logoColor=white)](https://www.linkedin.com/in/ronal-tsilva-2583792a3/)
+[![Marcio Zinanyuca](https://img.shields.io/badge/Marcio%20Zinanyuca-%2300629B?style=for-the-badge&logo=ieee&logoColor=white)](https://www.linkedin.com/in/marcio-zinanyuca)
 
-## 👥 Equipo
-Desarrollado por el IEEE Comité de Proyectos CSUTP.
+<p align="right">
+    (<strong><a href="#readme-top">regresar</a></strong>)
 
 ---
 
