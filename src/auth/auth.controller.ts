@@ -7,9 +7,11 @@ import { authLoginRq } from "./request/auth-login-rq";
 import { AuthLoginRs } from "./response/auth-login-rs";
 import { UsuarioRs } from "./response/auth-register-rs";
 import { verifyToken, REFRESH_TOKEN_COOKIE_OPTIONS } from "../utils/auth";
+import { UsuarioRepository } from "../usuario/usuario.repository";
 
 const router = Router();
-const authService = new AuthService();
+const usuaurioRepository = new UsuarioRepository();
+const authService = new AuthService(usuaurioRepository);
 
 router.post("/register",
     authRegisterRq(), 

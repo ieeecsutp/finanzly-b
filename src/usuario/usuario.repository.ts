@@ -1,8 +1,9 @@
 import { PrismaClient, Usuario, Prisma } from "@prisma/client";
+import { CrudRepository, IUserRepository } from "../interfaces/interfaces";
 
 const prisma = new PrismaClient();
 
-export class UsuarioRepository {
+export class UsuarioRepository implements CrudRepository<Usuario>, IUserRepository{
     async getAll(): Promise<Usuario[]> {
         return await prisma.usuario.findMany();
     }
@@ -26,7 +27,6 @@ export class UsuarioRepository {
         });
     }
 
-    // NUEVOS MÉTODOS AGREGADOS:
     async update(id: number, data: Prisma.UsuarioUpdateInput): Promise<Usuario> {
         return await prisma.usuario.update({
             where: { idUsuario: id },

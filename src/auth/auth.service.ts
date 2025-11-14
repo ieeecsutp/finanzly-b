@@ -5,6 +5,7 @@ import { UsuarioRs } from "./response/auth-register-rs";
 import { BadRequestError, DuplicateResourceError, UnauthorizedError } from "../utils/error-types";
 import { toAuthLoginRs, toUserRs } from "./mapper/auth.mapper";
 import { verifyPassword, createAccessToken, getPasswordHash, createRefreshToken, getRefreshTokenExpiration } from "../utils/auth";
+import { IUserRepository } from "../interfaces/interfaces";
 
 export class AuthService {
     private async cleanupExpiredTokens() {
@@ -15,9 +16,10 @@ export class AuthService {
         }
     }
     private authRepository = new AuthRepository();
+    constructor(private userRepository: IUserRepository) {}
 
     async createAuth(data: Prisma.UsuarioCreateInput): Promise<UsuarioRs> {
-        const existingAuth = await this.authRepository.getByEmail(data.correo);
+        const existingAuth = await this.userRepository.getByEmail(data.correo);
         if (existingAuth) {
             throw new DuplicateResourceError("El correo ya está registrado.");
         }
@@ -31,7 +33,7 @@ export class AuthService {
     }
 
     async loginAuth(correo: string, contra: string): Promise<AuthLoginRs> {
-        const usuario = await this.authRepository.getByEmail(correo);
+        const usuario = await this.userRepository.getByEmail(correo);
 
         if (!usuario) {
             throw new BadRequestError("Correo o contraseña incorrectos.");

@@ -1,8 +1,9 @@
 import { PrismaClient, Categoria, Prisma } from "@prisma/client";
+import { CrudRepository, ICategoriaRepository } from "../interfaces/interfaces";
 
 const prisma = new PrismaClient();
 
-export class CategoriaRepository {
+export class CategoriaRepository implements CrudRepository<Categoria>, ICategoriaRepository{
     async getAll(): Promise<Categoria[]> {
         return await prisma.categoria.findMany({
             include: {
