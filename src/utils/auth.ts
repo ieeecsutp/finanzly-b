@@ -110,7 +110,7 @@ export const verifyUserMatch = (req: Request, res: Response, next: NextFunction)
 export const REFRESH_TOKEN_COOKIE_OPTIONS = {
   httpOnly: true, // No accesible desde JavaScript
   secure: process.env.NODE_ENV === 'production', // Solo HTTPS en producción
-  sameSite: 'strict' as const, // Protección CSRF
+  sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax' as const, // Menos restrictivo en desarrollo
   maxAge: settings.refresh_token_expire_days * 24 * 60 * 60 * 1000, // 7 días en ms
-  path: '/api/v1/auth' // Solo se envía a rutas de auth
+  path: '/api/auth' // Ruta correcta de auth
 };

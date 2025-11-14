@@ -8,6 +8,13 @@ import { verifyPassword, createAccessToken, getPasswordHash, createRefreshToken,
 import { IUserRepository } from "../interfaces/interfaces";
 
 export class AuthService {
+    private async cleanupExpiredTokens() {
+        try {
+            await this.authRepository.cleanupExpiredTokens();
+        } catch (error) {
+            console.error('Error al limpiar tokens expirados:', error);
+        }
+    }
     private authRepository = new AuthRepository();
     constructor(private userRepository: IUserRepository) {}
 
@@ -62,23 +69,35 @@ export class AuthService {
     }
 
     async refreshAccessToken(refreshToken: string): Promise<{ accessToken: string; newRefreshToken: string }> {
+        // Limpiar tokens expirados y revocados periódicamente
+        await this.cleanupExpiredTokens();
+
         // Buscar refresh token en la base de datos
         const storedToken = await this.authRepository.findRefreshToken(refreshToken);
 
         if (!storedToken) {
-            throw new UnauthorizedError("Refresh token inválido.");
+            throw new UnauthorizedError("El refresh token proporcionado no existe en la base de datos.");
         }
 
         // Verificar si el token fue revocado
         if (storedToken.Revocado) {
-            throw new UnauthorizedError("Refresh token revocado.");
+            throw new UnauthorizedError("El refresh token ha sido revocado. Por favor inicie sesión nuevamente.");
         }
 
         // Verificar si el token expiró
         if (storedToken.fechaExpiracion < new Date()) {
             // Eliminar token expirado
             await this.authRepository.revokeRefreshToken(refreshToken);
-            throw new UnauthorizedError("Refresh token expirado.");
+            throw new UnauthorizedError("El refresh token ha expirado. Por favor inicie sesión nuevamente.");
+        }
+
+        // Verificar la antigüedad del token (detectar posible reuso)
+        const tokenAge = Date.now() - storedToken.fechaCreacion.getTime();
+        const maxTokenAge = 24 * 60 * 60 * 1000; // 24 horas en milisegundos
+        
+        if (tokenAge > maxTokenAge) {
+            await this.authRepository.revokeRefreshToken(refreshToken);
+            throw new UnauthorizedError("El refresh token es demasiado antiguo. Por favor inicie sesión nuevamente.");
         }
 
         // ✅ Token rotation: eliminar el token usado
@@ -88,7 +107,7 @@ export class AuthService {
         const usuario = await this.authRepository.getById(storedToken.idUsuario);
 
         if (!usuario) {
-            throw new BadRequestError("Usuario no encontrado.");
+            throw new BadRequestError("No se encontró el usuario asociado al token. Por favor inicie sesión nuevamente.");
         }
 
         const tk_usuario = toUserRs(usuario);

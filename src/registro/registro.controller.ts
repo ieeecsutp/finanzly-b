@@ -12,6 +12,28 @@ import { ResourceNotFoundError } from "../utils/error-types";
 const router = Router();
 const registroService = new RegistroService();
 
+// GET /registros/balances - Obtener balances agregados del usuario autenticado
+router.get('/balances', verifyToken, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({ status: 'error', message: 'Usuario no autenticado' });
+        }
+
+        const usuarioId = req.user.id;
+        const balances = await registroService.getBalances(usuarioId);
+
+        const response: ApiResponse<Record<string, any>> = {
+            status: 'success',
+            message: 'Balances obtenidos correctamente',
+            data: balances,
+        };
+
+        res.json(response);
+    } catch (error) {
+        next(error);
+    }
+});
+
 // POST /registros - Crear un nuevo registro
 router.post("/",
     registroCreateRq(),
