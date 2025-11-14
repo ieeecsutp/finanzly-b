@@ -3,11 +3,6 @@ import { PrismaClient, Usuario, RefreshToken, Prisma } from "@prisma/client";
 const prisma = new PrismaClient();
 
 export class AuthRepository {
-    async getByEmail(email: string): Promise<Usuario | null> {
-        return await prisma.usuario.findUnique({
-            where: { correo: email },
-        });
-    }
 
     async getById(id: number): Promise<Usuario | null> {
         return await prisma.usuario.findUnique({
