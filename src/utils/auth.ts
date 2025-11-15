@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction, CookieOptions } from "express";
 import bcrypt from "bcrypt";
 import jwt ,{ JwtPayload } from "jsonwebtoken";
 import crypto from "crypto";
@@ -107,7 +107,7 @@ export const verifyUserMatch = (req: Request, res: Response, next: NextFunction)
   next();
 };
 
-export const REFRESH_TOKEN_COOKIE_OPTIONS = {
+export const REFRESH_TOKEN_COOKIE_OPTIONS : CookieOptions = {
   httpOnly: true, // No accesible desde JavaScript
   secure: process.env.NODE_ENV === 'production', // Solo HTTPS en producción
   sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax' as const, // Menos restrictivo en desarrollo

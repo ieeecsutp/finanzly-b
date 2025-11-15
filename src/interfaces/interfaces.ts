@@ -1,4 +1,4 @@
-import { Usuario, Categoria } from "@prisma/client";
+import { Usuario, Categoria, RefreshToken } from "@prisma/client";
 export interface CrudRepository<T> {
   create(data: T): Promise<T>;
   getAll(): Promise<T[]>;
@@ -19,4 +19,8 @@ export interface ICategoriaRepository {
   hasRegistros(categoriaId: number): Promise<boolean>;
   getRegistrosByCategoriaId(categoriaId: number): void;
   getCategoriaStats(categoriaId: number): void;
+}
+
+export interface IRefreshRepository {
+  getActiveSessions(id: number): Promise<RefreshToken[]>;
 }
