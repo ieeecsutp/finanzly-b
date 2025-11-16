@@ -25,14 +25,25 @@ model Usuario {
 
   registros Registro[]
   refresh RefreshToken[]
+  passwordResets PasswordReset[]
 }
 
 model Categoria {
   idCategoria Int @id @default(autoincrement()) @map("id_categoria")
   nombre String
   tipo String
+  // Hacemos la FK opcional para evitar bloqueos al agregar la columna
+  idPrioridad Int? @map("id_prioridad")
 
+  prioridad Prioridad? @relation(fields: [idPrioridad], references: [idPrioridad])
   registros Registro[]
+}
+
+model Prioridad {
+  idPrioridad Int @id @default(autoincrement()) @map("id_prioridad")
+  nivel String
+
+  categorias Categoria[]
 }
 
 model Registro{
@@ -56,5 +67,14 @@ model RefreshToken{
   fechaExpiracion   DateTime
   fechaCreacion   DateTime @default(now())
   Revocado     Boolean  @default(false)
+  usuario Usuario @relation(fields: [idUsuario], references: [idUsuario])
+}
+
+model PasswordReset{
+  idReset Int @id @default(autoincrement()) @map("id_reset")
+  idUsuario   Int
+  token       String   @unique
+  fechaExpiracion   DateTime
+  fechaCreacion   DateTime @default(now())
   usuario Usuario @relation(fields: [idUsuario], references: [idUsuario])
 }

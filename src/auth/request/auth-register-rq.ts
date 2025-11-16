@@ -10,7 +10,8 @@ export const authRegisterRq = () => [
     body("correo")
         .trim()
         .notEmpty().withMessage("El correo es obligatorio")
-        .isEmail().withMessage("Debe ser un correo válido"),
+        .isEmail().withMessage("Debe ser un correo válido")
+        .normalizeEmail(),
 
     body("contraseña")
         .trim()
