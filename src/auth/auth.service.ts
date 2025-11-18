@@ -204,4 +204,16 @@ export class AuthService {
             message: "Contraseña actualizada exitosamente. Por favor, inicia sesión con tu nueva contraseña."
         };
     }
+
+    async revokeRefreshToken(refreshToken: string): Promise<void> {
+        // Limpiar tokens expirados primero
+        await this.cleanupExpiredTokens();
+
+        const storedToken = await this.authRepository.findRefreshToken(refreshToken);
+
+        if (storedToken && !storedToken.Revocado) {
+            // Revocar el token en la base de datos
+            await this.authRepository.revokeRefreshToken(refreshToken);
+        }
+    }
 }

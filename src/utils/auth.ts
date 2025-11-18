@@ -89,7 +89,14 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
     req.user = decoded as AuthPayload; // guardamos el payload del JWT en req.user
     next();
   } catch (error) {
-    throw new UnauthorizedError("Token invalido o expirado.");
+    // Distinguir entre errores de expiración y otros errores
+    if (error instanceof jwt.TokenExpiredError) {
+      throw new UnauthorizedError("Token expirado.");
+    } else if (error instanceof jwt.JsonWebTokenError) {
+      throw new UnauthorizedError("Token inválido.");
+    } else {
+      throw new UnauthorizedError("Token invalido o expirado.");
+    }
   }
 };
 

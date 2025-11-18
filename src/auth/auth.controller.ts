@@ -159,4 +159,36 @@ router.post("/reset-password",
     }
 );
 
+router.post("/logout",
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            // Obtener el refresh token de la cookie
+            const refreshToken = req.cookies?.refreshToken;
+
+            if (refreshToken) {
+                // Revocar el refresh token en la base de datos
+                await authService.revokeRefreshToken(refreshToken);
+            }
+
+            // Limpiar la cookie del refresh token
+            res.clearCookie('refreshToken', {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax' as const,
+                path: '/api/auth'
+            });
+
+            const response: ApiResponse<null> = {
+                status: "success",
+                message: "Sesión cerrada exitosamente",
+                data: null,
+            };
+
+            res.status(200).json(response);
+        } catch (error) {
+            next(error);
+        }
+    }
+);
+
 export default router;
