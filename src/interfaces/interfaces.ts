@@ -9,6 +9,7 @@ export interface CrudRepository<T> {
 
 export interface IUserRepository {
   getByEmail(email: string): Promise<Usuario|null>;
+  updatePassword(idUsuario: number, hashedPassword: string): Promise<Usuario>;
 }
 
 export interface ICategoriaRepository {

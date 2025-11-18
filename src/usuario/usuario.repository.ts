@@ -39,4 +39,11 @@ export class UsuarioRepository implements CrudRepository<Usuario>, IUserReposito
             where: { idUsuario: id },
         });
     }
+
+    async updatePassword(idUsuario: number, hashedPassword: string): Promise<Usuario> {
+        return await prisma.usuario.update({
+            where: { idUsuario },
+            data: { contraseña: hashedPassword },
+        });
+    }
 }

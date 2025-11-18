@@ -4,8 +4,11 @@ import { ApiResponse } from "../utils/api-response";
 import { validateRequest } from "../utils/validate-request";
 import { authRegisterRq } from "./request/auth-register-rq";
 import { authLoginRq } from "./request/auth-login-rq";
+import { forgotPasswordRq } from "./request/forgot-password-rq";
+import { resetPasswordRq } from "./request/reset-password-rq";
 import { AuthLoginRs } from "./response/auth-login-rs";
 import { UsuarioRs } from "./response/auth-register-rs";
+import { ForgotPasswordRs, ResetPasswordRs } from "./response/password-reset-rs";
 import { verifyToken, REFRESH_TOKEN_COOKIE_OPTIONS } from "../utils/auth";
 import { UsuarioRepository } from "../usuario/usuario.repository";
 
@@ -109,6 +112,80 @@ router.get("/test",
 
             res.status(201).json(response)
         }catch(error){
+            next(error);
+        }
+    }
+);
+
+router.post("/forgot-password",
+    forgotPasswordRq(),
+    validateRequest("Datos invalidos"),
+    async (req: Request, res: Response, next: NextFunction) => {
+        try{
+            const { correo } = req.body;
+            const result = await authService.requestPasswordReset(correo);
+
+            const response: ApiResponse<ForgotPasswordRs> = {
+                status: "success",
+                message: result.message,
+                data: result,
+            };
+
+            res.status(200).json(response);
+        }catch(error){
+            next(error);
+        }
+    }
+);
+
+router.post("/reset-password",
+    resetPasswordRq(),
+    validateRequest("Datos invalidos"),
+    async (req: Request, res: Response, next: NextFunction) => {
+        try{
+            const { token, newPassword } = req.body;
+            const result = await authService.resetPassword(token, newPassword);
+
+            const response: ApiResponse<ResetPasswordRs> = {
+                status: "success",
+                message: result.message,
+                data: result,
+            };
+
+            res.status(200).json(response);
+        }catch(error){
+            next(error);
+        }
+    }
+);
+
+router.post("/logout",
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            // Obtener el refresh token de la cookie
+            const refreshToken = req.cookies?.refreshToken;
+
+            if (refreshToken) {
+                // Revocar el refresh token en la base de datos
+                await authService.revokeRefreshToken(refreshToken);
+            }
+
+            // Limpiar la cookie del refresh token
+            res.clearCookie('refreshToken', {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax' as const,
+                path: '/api/auth'
+            });
+
+            const response: ApiResponse<null> = {
+                status: "success",
+                message: "Sesión cerrada exitosamente",
+                data: null,
+            };
+
+            res.status(200).json(response);
+        } catch (error) {
             next(error);
         }
     }

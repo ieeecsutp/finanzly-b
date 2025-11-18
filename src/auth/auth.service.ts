@@ -1,11 +1,14 @@
 import { Prisma } from "@prisma/client";
 import { AuthRepository } from "./auth.repository";
+import { PasswordResetRepository } from "./password-reset.repository";
 import { AuthLoginRs } from "./response/auth-login-rs";
 import { UsuarioRs } from "./response/auth-register-rs";
+import { ForgotPasswordRs, ResetPasswordRs } from "./response/password-reset-rs";
 import { BadRequestError, DuplicateResourceError, UnauthorizedError } from "../utils/error-types";
 import { toAuthLoginRs, toUserRs } from "./mapper/auth.mapper";
 import { verifyPassword, createAccessToken, getPasswordHash, createRefreshToken, getRefreshTokenExpiration } from "../utils/auth";
 import { IUserRepository } from "../interfaces/interfaces";
+import { sendResetEmail } from "../lib/mailer";
 
 export class AuthService {
     private async cleanupExpiredTokens() {
@@ -16,6 +19,7 @@ export class AuthService {
         }
     }
     private authRepository = new AuthRepository();
+    private passwordResetRepository = new PasswordResetRepository();
     constructor(private userRepository: IUserRepository) {}
 
     async createAuth(data: Prisma.UsuarioCreateInput): Promise<UsuarioRs> {
@@ -130,5 +134,86 @@ export class AuthService {
             accessToken: newAccessToken,
             newRefreshToken
         };
+    }
+
+    async requestPasswordReset(correo: string): Promise<ForgotPasswordRs> {
+        const usuario = await this.userRepository.getByEmail(correo);
+        
+        if (!usuario) {
+            throw new BadRequestError("El correo proporcionado no existe en el sistema.");
+        }
+
+        // Limpiar tokens expirados
+        await this.passwordResetRepository.cleanupExpiredTokens();
+
+        // Crear token de recuperación
+        const resetToken = await this.passwordResetRepository.createResetToken(usuario.idUsuario);
+
+        // Generar URL de reset para enviar por email
+        const frontendUrl = process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+        const resetUrl = `${frontendUrl.replace(/\/+$/, "")}/reset-password?token=${resetToken}`;
+
+        // Intentar enviar email con SendGrid (si está configurado)
+        const mailResult = await sendResetEmail(correo, resetUrl, resetToken);
+
+        // En entorno de desarrollo o si el envío falla, retornamos token y resetUrl para facilitar pruebas
+        const isProd = (process.env.NODE_ENV === "production");
+
+        const response: ForgotPasswordRs = {
+            message: `Si la cuenta existe, se ha enviado un enlace de recuperación al correo ${correo}. Revisa tu bandeja de entrada (y spam).`,
+        };
+
+        if (!isProd) {
+            // Mostrar token y resetUrl en dev para pruebas rápidas
+            (response as any).token = resetToken;
+            (response as any).resetUrl = resetUrl;
+        } else if (!mailResult.success) {
+            // En producción si el mail no pudo enviarse, devolver mensaje y log
+            (response as any).resetUrl = resetUrl; // opcional para soporte
+        }
+
+        return response;
+    }
+
+    async resetPassword(token: string, newPassword: string): Promise<ResetPasswordRs> {
+        // Limpiar tokens expirados
+        await this.passwordResetRepository.cleanupExpiredTokens();
+
+        // Buscar el token
+        const resetTokenData = await this.passwordResetRepository.findResetToken(token);
+
+        if (!resetTokenData) {
+            throw new BadRequestError("El token de recuperación es inválido o ha expirado.");
+        }
+
+        // Verificar si el token expiró
+        if (resetTokenData.fechaExpiracion < new Date()) {
+            await this.passwordResetRepository.deleteResetToken(token);
+            throw new UnauthorizedError("El token de recuperación ha expirado. Por favor, solicita uno nuevo.");
+        }
+
+        // Actualizar contraseña del usuario
+        const hashedPassword = getPasswordHash(newPassword);
+        
+        await this.userRepository.updatePassword(resetTokenData.idUsuario, hashedPassword);
+
+        // Eliminar el token usado
+        await this.passwordResetRepository.deleteResetToken(token);
+
+        return {
+            message: "Contraseña actualizada exitosamente. Por favor, inicia sesión con tu nueva contraseña."
+        };
+    }
+
+    async revokeRefreshToken(refreshToken: string): Promise<void> {
+        // Limpiar tokens expirados primero
+        await this.cleanupExpiredTokens();
+
+        const storedToken = await this.authRepository.findRefreshToken(refreshToken);
+
+        if (storedToken && !storedToken.Revocado) {
+            // Revocar el token en la base de datos
+            await this.authRepository.revokeRefreshToken(refreshToken);
+        }
     }
 }
